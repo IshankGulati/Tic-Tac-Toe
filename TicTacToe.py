@@ -23,15 +23,18 @@ config =\
      'width': 800,
      'height': 800,
      'back_color': (255, 255, 255),
-     'font_ratio': 30,
+     'font_ratio': 10,
      'font_color': (0, 0, 255),
      'fps': 60,
+     'mess_font_ratio': 20,
+     'button_font_ratio': 35,
      'button_color': (255, 0, 0),
-     'button_height': 30,
-     'button_width': 60,
+     'button_font_color': (255, 255, 255),
+     'button_height': 40,
+     'button_width': 70,
      'player_width': 150,
      'player_height': 150,
-     'title': "Tic Tac Toe   (Play with Numpad or Mouse, press Esc to exit)"}
+     'title': "Tic Tac Toe  (Play with Numpad, press Esc to exit)"}
 
 
 class GameState:
@@ -58,6 +61,7 @@ class PygView(object):
         self.back_color = config.back_color
         self.fps = config.fps
         self.font_color = config.font_color
+        self.button_font_color = config.button_font_color
         self.controller = controller
         self.buttons = buttons
         self.button_color = config.button_color
@@ -73,7 +77,9 @@ class PygView(object):
         pg.display.set_caption(config.title)
         self.clock = pg.time.Clock()
         pg.mouse.set_visible(config.visibmouse)
+        self.font_button = pg.font.Font(None, self.height // config.button_font_ratio)
         self.font = pg.font.Font(None, self.height // config.font_ratio)
+        self.font_mess = pg.font.Font(None, self.height // config.mess_font_ratio)
 
     def frame_duration(self):
         return 0.001 * self.clock.get_time()
@@ -100,9 +106,9 @@ class PygView(object):
         self.o = self.o.convert_alpha()
         self.screen.blit(self.background, (100, 100))
         self.background_rect = self.background.get_rect(center = (self.width // 2, self.height // 2))
-        self.draw_text("Tic Tac Toe", 100, 20)
+        self.draw_text("Tic Tac Toe", self.font, 243, 20)
         self.draw_button("Reset", self.buttons.reset[0], self.buttons.reset[1])
-        self.draw_button("Player Start", self.buttons.player[0], self.buttons.player[1])
+        self.draw_button("You Start", self.buttons.player[0], self.buttons.player[1])
         self.draw_button("Bot Start", self.buttons.ai[0], self.buttons.ai[1])
         self.flip()
 
@@ -118,15 +124,6 @@ class PygView(object):
     def get_events(self):
         click_event = None
 
-        if self.get_click(self.buttons.reset):
-            click_event = 'reset'
-
-        if self.get_click(self.buttons.player):
-            click_event = 'start_pl'
-
-        if self.get_click(self.buttons.ai):
-            click_event = 'start_ai'
-
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return 'quit', None, click_event
@@ -137,22 +134,30 @@ class PygView(object):
                     return 'quit', move_events, click_event
                 else:
                     return 'other_key', move_events, click_event
+            if event.type == pg.MOUSEBUTTONDOWN:
+                if self.get_click(self.buttons.reset):
+                    click_event = 'reset'
+                if self.get_click(self.buttons.player):
+                    click_event = 'start_pl'
+                if self.get_click(self.buttons.ai):
+                    click_event = 'start_ai'
 
+                return None, None, click_event
         else:
-            return None, None, click_event
+            return None, None, None
 
-    def draw_text(self, text, x, y):
-        w, h = self.font.size(text)
-        surface = self.font.render(text, True, self.font_color)
+    def draw_text(self, text, font, x, y):
+        # w, h = self.font.size(text)
+        surface = font.render(text, True, self.font_color)
         self.screen.blit(surface, (x, y))
 
     def text_objects(self, text, font):
-        textSurface = self.font.render(text, True, self.font_color)
+        textSurface = font.render(text, True, self.button_font_color)
         return textSurface, textSurface.get_rect()
 
     def draw_button(self, text, x, y):
         pg.draw.rect(self.screen, self.button_color, (x, y, self.button_width, self.button_height))
-        textSurf, textRect = self.text_objects(text, self.font)
+        textSurf, textRect = self.text_objects(text, self.font_button)
         textRect.center = ((x + (self.button_width // 2)), (y + (self.button_height // 2)))
         self.screen.blit(textSurf, textRect)
 
@@ -276,9 +281,11 @@ class Game(object):
         if self._board.getVal(loc[0], loc[1]) == NO_VAL:
             self._board.setVal(loc[0], loc[1], self._currentPlayer)
             view.draw_player(loc[1], loc[0])
+            self.changePlayer()
 
     def aiMove(self, view):
         self._ai.performMove(view, self._board)
+        self.changePlayer()
 
     def reset(self, view):
         self._currentPlayer = X_VAL
@@ -295,12 +302,10 @@ class Game(object):
 
         if self._currentPlayer == self._aiPlayer:
             self.aiMove(view)
-            self.changePlayer()
         else:
             if move_events != None:
                 for event in move_events:
                     self.playerMove(view, event)
-                    self.changePlayer()
 
         status = self._board.checkVictory()
         if status != NO_VAL:
@@ -311,15 +316,15 @@ class Game(object):
 
     def endGame(self, view, wasTie):
         if wasTie:
-            view.draw_text("Tie Game", 350, 720)
-            view.draw_text("Press Reset button to play or Esc to Quit", 250, 770)
+            view.draw_text("Tie Game", view.font_mess, 338, 720)
+            view.draw_text("Press Reset button to play or Esc to Quit", view.font_mess, 125, 770)
         else:
             if self._currentPlayer == self._aiPlayer:
-                view.draw_text("Player wins", 350, 720)
-                view.draw_text("Press Reset button to play or Esc to Quit", 250, 770)
+                view.draw_text("You win", view.font_mess, 338, 720)
+                view.draw_text("Press Reset button to play or Esc to Quit", view.font_mess, 125, 770)
             else:
-                view.draw_text("AI wins", 350, 720)
-                view.draw_text("Press Reset button to play or Esc to Quit", 250, 770)
+                view.draw_text("AI wins", view.font_mess, 338, 720)
+                view.draw_text("Press Reset button to play or Esc to Quit", view.font_mess, 125, 770)
         view.flip()
 
     def changePlayer(self):
