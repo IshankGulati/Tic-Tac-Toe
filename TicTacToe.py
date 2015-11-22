@@ -28,7 +28,7 @@ config =\
      'fps': 60,
      'mess_font_ratio': 20,
      'button_font_ratio': 35,
-     'button_color': (255, 0, 0),
+     'button_color': (0, 0, 0),
      'button_font_color': (255, 255, 255),
      'button_height': 40,
      'button_width': 70,
@@ -106,7 +106,7 @@ class PygView(object):
         self.o = self.o.convert_alpha()
         self.screen.blit(self.background, (100, 100))
         self.background_rect = self.background.get_rect(center = (self.width // 2, self.height // 2))
-        self.draw_text("Tic Tac Toe", self.font, 243, 20)
+        self.draw_text("Tic Tac Toe", self.font, 0, 0, 800, 100)
         self.draw_button("Reset", self.buttons.reset[0], self.buttons.reset[1])
         self.draw_button("You Start", self.buttons.player[0], self.buttons.player[1])
         self.draw_button("Bot Start", self.buttons.ai[0], self.buttons.ai[1])
@@ -146,19 +146,21 @@ class PygView(object):
         else:
             return None, None, None
 
-    def draw_text(self, text, font, x, y):
-        # w, h = self.font.size(text)
-        surface = font.render(text, True, self.font_color)
-        self.screen.blit(surface, (x, y))
-
-    def text_objects(self, text, font):
-        textSurface = font.render(text, True, self.button_font_color)
+    def text_objects(self, text, font, color):
+        textSurface = font.render(text, True, color)
         return textSurface, textSurface.get_rect()
+
+    def draw_text(self, text, font, x, y, w, h):
+        # w, h = self.font.size(text)
+        pg.draw.rect(self.screen, self.back_color, (x, y, w, h))
+        textSurf, textRect = self.text_objects(text, font, self.font_color)
+        textRect.center = (x + (w // 2)), (y + h // 2)
+        self.screen.blit(textSurf, textRect)
 
     def draw_button(self, text, x, y):
         pg.draw.rect(self.screen, self.button_color, (x, y, self.button_width, self.button_height))
-        textSurf, textRect = self.text_objects(text, self.font_button)
-        textRect.center = ((x + (self.button_width // 2)), (y + (self.button_height // 2)))
+        textSurf, textRect = self.text_objects(text, self.font_button, self.button_font_color)
+        textRect.center = (x + (self.button_width // 2)), (y + (self.button_height // 2))
         self.screen.blit(textSurf, textRect)
 
     def draw_player(self, i, j):
@@ -316,15 +318,15 @@ class Game(object):
 
     def endGame(self, view, wasTie):
         if wasTie:
-            view.draw_text("Tie Game", view.font_mess, 338, 720)
-            view.draw_text("Press Reset button to play or Esc to Quit", view.font_mess, 125, 770)
+            view.draw_text("Tie Game", view.font_mess, 0, 700, 800, 50)
+            view.draw_text("Press Reset button to play or Esc to Quit", view.font_mess, 0, 750, 800, 50)
         else:
             if self._currentPlayer == self._aiPlayer:
-                view.draw_text("You win", view.font_mess, 338, 720)
-                view.draw_text("Press Reset button to play or Esc to Quit", view.font_mess, 125, 770)
+                view.draw_text("You win", view.font_mess, 0, 700, 800, 50)
+                view.draw_text("Press Reset button to play or Esc to Quit", view.font_mess, 0, 750, 800, 50)
             else:
-                view.draw_text("AI wins", view.font_mess, 338, 720)
-                view.draw_text("Press Reset button to play or Esc to Quit", view.font_mess, 125, 770)
+                view.draw_text("AI wins", view.font_mess, 0, 700, 800, 50)
+                view.draw_text("Press Reset button to play or Esc to Quit", view.font_mess, 0, 750, 800, 50)
         view.flip()
 
     def changePlayer(self):
