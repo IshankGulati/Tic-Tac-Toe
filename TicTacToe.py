@@ -6,6 +6,7 @@
 from __future__ import print_function, division
 import pygame as pg
 import os
+from random import randint
 
 NO_VAL = 0
 X_VAL = 1
@@ -70,7 +71,6 @@ class PygView(object):
         self.player_height = config.player_height
         self.player_width = config.player_width
 
-        pg.mixer.pre_init(44100, -16, 2, 2048)
         pg.init()
         flags = pg.DOUBLEBUF | [0, pg.FULLSCREEN][config.fullscreen]
         self.screen = pg.display.set_mode((self.width, self.height), flags)
@@ -96,12 +96,12 @@ class PygView(object):
 
     def _setup(self):
         self.screen.fill(self.back_color)
-        self.background = pg.image.load(os.path.join("data", "base.gif"))
+        self.background = pg.image.load(os.path.join("images", "base.gif"))
         self.background = self.background.convert_alpha()
-        self.x = pg.image.load(os.path.join("data", "x.png"))
+        self.x = pg.image.load(os.path.join("images", "x.png"))
         self.x = pg.transform.scale(self.x, (self.player_width, self.player_height))
         self.x = self.x.convert_alpha()
-        self.o = pg.image.load(os.path.join("data", "o.png"))
+        self.o = pg.image.load(os.path.join("images", "o.png"))
         self.o = pg.transform.scale(self.o, (self.player_width, self.player_height))
         self.o = self.o.convert_alpha()
         self.screen.blit(self.background, (100, 100))
@@ -203,15 +203,13 @@ class Controller(object):
             return False
 
         events = move_events, click_event
+        if click_event == 'reset':
+            self._gameState = GameState.PLAYING
+            self._game.reset(self.view)
 
         if self._gameState == GameState.PLAYING:
             self._gameState = self._game.process(self.view, events)
             return True
-
-        if self._gameState == GameState.EXIT:
-            if click_event == 'reset':
-                self._gameState = GameState.PLAYING
-                self._game.reset(self.view)
 
         return True
 
@@ -222,7 +220,12 @@ class AI(object):
         self._humanPlayer = X_VAL
 
     def performMove(self, view, board):
-        bestMove = self.MiniMax(board, self._aiPlayer)
+        if board.isEmpty() is False:
+            bestMove = self.MiniMax(board, self._aiPlayer)
+        else:
+            bestMove = AiMove()
+            bestMove.row = randint(0, 2)
+            bestMove.col = randint(0, 2)
         board.setVal(bestMove.row, bestMove.col, self._aiPlayer)
         view.draw_ai(bestMove.col, bestMove.row)
 
@@ -352,6 +355,13 @@ class Board(object):
 
     def getVal(self, x, y):
         return self._board[x][y]
+
+    def isEmpty(self):
+        for row in xrange(self._size):
+            for col in xrange(self._size):
+                if self.getVal(col, row) != NO_VAL:
+                    return False
+        return True
 
     def checkVictory(self):
         # check rows
